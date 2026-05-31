@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>懂车帝 AI 养车档案 - 交互 Demo</title>
+    <style>
+        /* ==========================================================================
+           1. 基础重置与设备容器 (iPhone 17 Pro Max 430x932 比例)
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1f2129;
+            gap: 16px;
+        }
+
+        /* 手机容器 */
+        .phone-container {
+            width: 430px;
+            height: 932px;
+            background-color: #faf9f5; /* 象牙白 */
+            border-radius: 44px;
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 12px #c7ccd3,
+                0 0 0 14px #eef1f4,
+                0 0 0 16px #f8fafc,
+                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                inset 0 -1px 0 rgba(150, 158, 168, 0.25);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .frame-picker {
+            width: 132px;
+            background: #ffffff;
+            border: 1px solid #e8e5db;
+            border-radius: 14px;
+            box-shadow: 0 8px 18px rgba(80, 72, 52, 0.12);
+            padding: 10px;
+            display: grid;
+            gap: 8px;
+            align-self: center;
+        }
+        .frame-picker-title {
+            font-size: 12px;
+            color: #6f726f;
+            font-weight: 600;
+            text-align: center;
+        }
+        .frame-option {
+            border: 1px solid #e5e2d7;
+            background: #faf9f5;
+            color: #3f433f;
+            border-radius: 9px;
+            padding: 7px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .frame-option.active {
+            border-color: #ffcc00;
+            background: #fff7dd;
+            color: #5b4b1f;
+        }
+
+        /* 灵动岛/状态栏模拟占位，增加高保真细节 */
+        .status-bar {
+            height: 40px;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px 0 28px;
+            font-size: 14px;
+            font-weight: 600;
+            pointer-events: none;
+            color: #1f2129;
+        }
+        .status-bar .island {
+            width: 110px;
+            height: 30px;
+            background: #000;
+            border-radius: 15px;
+            position: absolute;
+            left: 50%;
+            top: 10px;
+            transform: translateX(-50%);
+        }
+
+        /* 视图基础样式 */
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding-top: 44px; /* 避开状态栏 */
+        }
+        .view.active {
+            display: flex;
+        }
+
+        /* ==========================================================================
+           2. 阶段一：首页欢迎信样式 (Premium Letter Style)
+           ========================================================================== */
+        #view-welcome {
+            background: linear-gradient(180deg, #fffcf5 0%, #f7f4eb 100%);
+            justify-content: space-between;
+            padding-bottom: 40px;
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-top: 24px;
+        }
+        .welcome-header .brand {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f2129;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 0;
+            letter-spacing: 1px;
+        }
+        .welcome-header .subtitle {
+            font-size: 14px;
+            color: #7f7f7f;
+            margin-top: 8px;
+        }
+
+        /* 精致弹窗式信函卡片 */
+        .letter-card {
+            background: #ffffff;
+            border: 1px solid rgba(230, 215, 180, 0.5);
+            border-radius: 24px;
+            margin: 0 24px;
+            padding: 32px 24px 24px 24px;
+            box-shadow: 0 12px 32px rgba(180, 160, 120, 0.12);
+            position: relative;
+        }
+        .letter-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #f3e7cb 0%, #e6d7b4 100%);
+            color: #614e27;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(180, 160, 120, 0.2);
+        }
+        .letter-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2129;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        .letter-body {
+            font-size: 14px;
+            color: #4a4d57;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .letter-features {
+            list-style: none;
+            background: #faf8f2;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .letter-features li {
+            font-size: 13px;
+            color: #5c5f66;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .letter-features li:last-child {
+            margin-bottom: 0;
+        }
+        .letter-features li::before {
+            content: "✦";
+            color: #d4af37;
+            margin-right: 8px;
+            font-size: 12px;
+        }
+        .letter-footer {
+            font-size: 13px;
+            color: #7a7e85;
+            text-align: center;
+            border-top: 1px dashed #e6e4dc;
+            padding-top: 16px;
+        }
+
+        /* 通用大按钮 */
+        .cta-btn {
+            background: linear-gradient(90deg, #ffde4d 0%, #ffcc00 100%);
+            color: #1f2129;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 16px;
+            height: 56px;
+            margin: 0 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 204, 0, 0.3);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .cta-btn:active {
+            transform: scale(0.98);
+            opacity: 0.95;
+        }
+
+        .cta-consent {
+            margin: 4px 24px 0;
+            text-align: center;
+            font-size: 12px;
+            color: #8c9097;
+            line-height: 1.45;
+        }
+
+        /* ==========================================================================
+           3. 阶段二：Loading 生成页样式
+           ========================================================================== */
+        #view-loading {
+            background: #faf9f5;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        .spinner-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        /* 轻量金色优雅 Spinner */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(212, 175, 55, 0.1);
+            border-radius: 50%;
+            border-top-color: #d4af37;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 32px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text-container {
+            height: 60px; /* 固定高度防止跳动 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading-txt {
+            font-size: 15px;
+            color: #4a4d57;
+            line-height: 1.6;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        .dynamic-num {
+            font-size: 20px;
+            font-weight: 700;
+            color: #d4af37;
+            font-family: "DIN Alternate", Impact, sans-serif;
+            margin: 0 4px;
+        }
+
+        /* ==========================================================================
+           4. 阶段三：养车报告页样式 (可滚动核心页)
+           ========================================================================== */
+        #view-report {
+            background-color: #f7f6f0;
+        }
+        /* 固定顶部导航栏 */
+        .report-navbar {
+            height: 50px;
+            background: #ffffff;
+            border-bottom: 1px solid #edebe4;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 20px;
+            color: #1f2129;
+        }
+        .navbar-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2129;
+        }
+
+        /* 真正可滚动的核心报告容器 */
+        .report-scroller {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 16px 120px 16px; /* 底部留白给滑动引导区占位 */
+        }
+        /* 隐藏滚动条但保留滚动能力 */
+        .report-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 模块卡片通用基础结构 */
+        .report-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 14px rgba(160, 150, 130, 0.06);
+            border: 1px solid rgba(230, 228, 220, 0.6);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2129;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .card-title::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 15px;
+            background: #ffcc00;
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        /* 板块1：车辆展示 */
+        .car-hero-card {
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(180deg, #ffffff 60%, #fffbf0 100%);
+        }
+        .car-img-container {
+            width: 100%;
+            height: 200px;
+            background-color: #fcfbfa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+        .car-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .car-info-box {
+            padding: 16px 20px 20px 20px;
+        }
+        .car-name {
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #1f2129;
+        }
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .car-tag {
+            font-size: 11px;
+            font-weight: 500;
+            color: #7f6424;
+            background: #f7f2e4;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        /* 板块2：年度总览 */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .grid-item {
+            background: #faf9f5;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #f2efe6;
+        }
+        .grid-label {
+            font-size: 12px;
+            color: #7a7e85;
+            margin-bottom: 4px;
+        }
+        .grid-val {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2129;
+        }
+        .grid-val.highlight {
+            color: #e03a3a;
+            font-size: 18px;
+        }
+        .optimization-box {
+            background: linear-gradient(90deg, #fffcf0 0%, #fff7e0 100%);
+            border-left: 3px solid #ffcc00;
+            padding: 12px;
+            border-radius: 0 10px 10px 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #5c5a54;
+        }
+
+        /* 板块3：风险诊断 */
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff5f5;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+        }
+        .risk-level {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e03a3a;
+            display: flex;
+            align-items: center;
+        }
+        .risk-level::before {
+            content: "⚠️";
+            margin-right: 6px;
+            font-size: 13px;
+        }
+        .risk-advice {
+            font-size: 13px;
+            color: #5c5f66;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+        .risk-item {
+            border-top: 1px solid #f0eee6;
+            padding: 12px 0 0 0;
+            margin-top: 12px;
+        }
+        .risk-item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .risk-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2129;
+        }
+        .risk-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .risk-badge.high { background: #ffebeb; color: #e03a3a; }
+        .risk-badge.mid { background: #fff2e0; color: #e67e22; }
+        .risk-badge.low { background: #eef7ee; color: #2ecc71; }
+        .risk-item-desc {
+            font-size: 12px;
+            color: #7a7e85;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2px;
+        }
+
+        /* 板块4：真实车主经验 */
+        .exp-item {
+            background: #fcfbfa;
+            border: 1px solid #f5f3eb;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .exp-item:last-child { margin-bottom: 0; }
+        .exp-tag {
+            font-size: 12px;
+            font-weight: 600;
+            color: #b38f3b;
+            margin-bottom: 4px;
+        }
+        .exp-content {
+            font-size: 13px;
+            color: #4a4d57;
+            line-height: 1.5;
+        }
+
+        /* 板块5：省钱建议 */
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .tip-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, #fdfcf7 0%, #f7f5ed 100%);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #eae7dc;
+        }
+        .tip-left {
+            display: flex;
+            flex-direction: column;
+        }
+        .tip-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f2129;
+        }
+        .tip-save {
+            font-size: 14px;
+            font-weight: 700;
+            color: #b38f3b;
+        }
+        .tips-explain {
+            font-size: 12px;
+            color: #8a8e99;
+            line-height: 1.5;
+            margin-top: 12px;
+            text-align: center;
+            background: #faf9f5;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        /* ==========================================================================
+           5. 阶段三：底部吸底上滑引导组件与 Toast
+           ========================================================================== */
+        .bottom-drawer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 105px;
+            background: linear-gradient(180deg, rgba(247, 246, 240, 0.9) 0%, #ffffff 40%);
+            border-top: 1px solid rgba(230, 228, 220, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            touch-action: none; /* 方便接管原生拖拽事件 */
+            transition: transform 0.2s ease-out;
+        }
+        .drag-handle {
+            width: 36px;
+            height: 5px;
+            background: #cccac2;
+            border-radius: 3px;
+            position: absolute;
+            top: 8px;
+        }
+        .arrow-up {
+            font-size: 16px;
+            color: #b38f3b;
+            animation: bounce 1.5s infinite;
+            margin-top: 8px;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .drawer-main-txt {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2129;
+            margin-top: 4px;
+        }
+        .drawer-sub-txt {
+            font-size: 11px;
+            color: #7a7e85;
+            margin-top: 2px;
+        }
+
+        /* 原生独立 Toast 提示层 */
+        .toast {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(31, 33, 41, 0.9);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="frame-picker">
+        <div class="frame-picker-title">机身框色</div>
+        <button class="frame-option active" data-frame="silver">钛银</button>
+        <button class="frame-option" data-frame="champagne">香槟</button>
+        <button class="frame-option" data-frame="graphite">石墨灰</button>
+    </div>
+
+    <div class="phone-container">
+        <div class="status-bar">
+            <span>9:41</span>
+            <div class="island"></div>
+            <span style="font-size:12px;">📶 🪫</span>
+        </div>
+
+        <div id="view-welcome" class="view active">
+            <div class="welcome-header">
+                <span class="brand">懂车帝 · 车主服务</span>
+                <div class="subtitle">已为你准备专属养车档案</div>
+            </div>
+
+            <div class="letter-card">
+                <span class="letter-badge">专属欢迎信</span>
+                <h2 class="letter-title" id="welcome-title">感谢您选择懂车帝</h2>
+                <div class="letter-body" id="welcome-body">
+                    </div>
+                <ul class="letter-features">
+                    <li>未来12个月养车成本趋势预估</li>
+                    <li>高风险维修项目提醒</li>
+                    <li>同车型真实车主经验参考</li>
+                    <li>个性化养车建议与优化方案</li>
+                </ul>
+                <div class="letter-footer" id="welcome-footer">
+                    </div>
+            </div>
+
+            <button class="cta-btn" id="btn-start">立即查看专属养车档案</button>
+            <div class="cta-consent">点击即为同意授权车辆信息及隐私信息</div>
+        </div>
+
+        <div id="view-loading" class="view">
+            <div class="spinner-box">
+                <div class="spinner"></div>
+                <div class="loading-text-container">
+                    <div class="loading-txt" id="loading-wording">您的专属档案即将呈现</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-report" class="view">
+            <div class="report-navbar">
+                <button class="back-btn" id="btn-back">‹</button>
+                <div class="navbar-title" id="report-nav-title">未来一年养车档案</div>
+            </div>
+
+            <div class="report-scroller" id="report-scroller-content">
+                
+                <div class="report-card car-hero-card">
+                    <div class="car-img-container">
+                        <img id="car-img" src="./bmw-i5-real.png" alt="车辆主图">
+                    </div>
+                    <div class="car-info-box">
+                        <div class="car-name" id="car-full-name">--</div>
+                        <div class="tag-container" id="car-tags-box">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-title">年度养车总览</div>
+                    <div class="overview-grid">
+                        <div class="grid-item">
+                            <div class="grid-label">预计年度花费</div>
+                            <div class="grid-val highlight">¥12,800 - ¥19,800</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-label">下次保养建议</div>
+                            <div class="grid-val">90天后 / 1万公里</div>
+                        </div>
+                        <div class="grid-item" style="grid-column: span 2;">
+                            <div class="grid-label">商业险预估预算</div>
+                            <div class="grid-val" style="font-size:15px; font-weight:600;">¥8,640 - ¥10,560</div>
+                        </div>
+                    </div>
+                    <div class="optimization-box">
+                        <strong>💡 可优化方案：</strong>利用夜间低谷电价充电，可节省约30%电费支出，预计今年节省约 ¥2,400。
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-title">风险诊断与检查建议</div>
+                    <div class="risk-header">
+                        <div class="risk-level">当前风险等级：中风险</div>
+                    </div>
+                    <div class="risk-advice">
+                        建议先检查刹车片剩余厚度与轮胎磨损状态，再根据使用频率安排后续更换。
+                    </div>
+                    <div id="risk-items-container">
+                        </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-title">同车型真实车主经验</div>
+                    <div id="experience-container">
+                        </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-title">精选智能省钱方案</div>
+                    <div class="tips-list" id="tips-container">
+                        </div>
+                    <div class="tips-explain">
+                        报告基于人工智能模型与懂车帝大数据算力生成。我们不仅为您量身定制成本数字，更告诉您每一笔开支背后的原因，提供切实可行的优化策略。
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bottom-drawer" id="bottom-drawer">
+                <div class="drag-handle"></div>
+                <div class="arrow-up">▲</div>
+                <div class="drawer-main-txt">上滑进入下一步对话</div>
+                <div class="drawer-sub-txt" id="drawer-sub-wording">每天与我聊天五分钟...</div>
+            </div>
+        </div>
+
+        <div class="toast" id="global-toast">已进入下一步对话（Demo）</div>
+    </div>
+
+    <script>
+        // 5. 数据结构：内置原生 Mock 数据
+        const carOwnerData = {
+            owner: {
+                name: "张先生"
+            },
+            car: {
+                fullName: "宝马i5 2025款 eDrive40L M运动套装",
+                imageUrl: "./bmw-i5-real.png",
+                mileageText: "2000公里",
+                location: "北京",
+                tags: ["准新车", "新能源", "过户少", "北京"]
+            },
+            yearlyCost: {
+                total: 34200, 
+                displayRange: "¥12,800 - ¥19,800",
+                nextMaintenance: "预计 90 天后（或 1 万公里）",
+                insuranceRange: "¥8,640 - ¥10,560"
+            },
+            maintenanceAlerts: [
+                { name: "刹车片", level: "high", levelText: "高风险", desc: "剩余寿命约15%，建议3个月内更换", cost: "¥3,500" },
+                { name: "轮胎", level: "mid", levelText: "中风险", desc: "剩余寿命约40%，建议持续观察胎纹", cost: "¥4,800" },
+                { name: "空调滤芯", level: "low", levelText: "低风险", desc: "建议6个月后更换", cost: "¥300" }
+            ],
+            ownerExperiences: [
+                { type: "续航表现", text: "实际续航约450km，城市通勤足够，高速约380km" },
+                { type: "充电便利性", text: "快充30分钟可充至80%，家充一晚充满" },
+                { type: "驾驶感受", text: "操控精准，隔音优秀，座椅舒适度高" }
+            ],
+            savingsTips: [
+                { title: "错峰充电策略", save: "¥2,400" },
+                { title: "4S店保养套餐", save: "¥960" },
+                { title: "次年保险比价", save: "¥1,440" }
+            ]
+        };
+
+        // 页面加载完成执行初始化与渲染
+        document.addEventListener("DOMContentLoaded", () => {
+            initWelcomeView();
+            initReportView();
+            setupEventListeners();
+            setupFramePicker();
+        });
+
+        // 渲染阶段一：欢迎信内容
+        function initWelcomeView() {
+            document.getElementById("welcome-title").innerText = `感谢您选择懂车帝，${carOwnerData.owner.name}`;
+            document.getElementById("welcome-body").innerHTML = `
+                恭喜您开启新的用车生活。<br>
+                基于您购买的<strong>${carOwnerData.car.fullName}</strong>信息，我们已经为您生成了一份专属养车档案。
+            `;
+            document.getElementById("welcome-footer").innerText = `希望它能帮助您少走弯路，让您的 i5 用车更安心。`;
+        }
+
+        // 渲染阶段三：报告页静态与动态数据
+        function initReportView() {
+            // 顶部导航与车辆基础数据
+            document.getElementById("report-nav-title").innerText = `i5 未来一年养车档案`;
+            document.getElementById("car-full-name").innerText = `${carOwnerData.car.fullName}（二手车）`;
+            
+            // 渲染车型标签
+            const tagsBox = document.getElementById("car-tags-box");
+            tagsBox.innerHTML = "";
+            carOwnerData.car.tags.forEach(tag => {
+                const span = document.createElement("span");
+                span.className = "car-tag";
+                span.innerText = tag;
+                tagsBox.appendChild(span);
+            });
+
+            // 渲染风险诊断列表
+            const riskContainer = document.getElementById("risk-items-container");
+            riskContainer.innerHTML = "";
+            carOwnerData.maintenanceAlerts.forEach(item => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "risk-item";
+                itemDiv.innerHTML = `
+                    <div class="risk-item-meta">
+                        <span class="risk-item-name">${item.name}</span>
+                        <span class="risk-badge ${item.level}">${item.levelText}</span>
+                    </div>
+                    <div class="risk-item-desc">
+                        <span>${item.desc}</span>
+                        <span style="font-weight:600; color:#1f2129;">预计 ${item.cost}</span>
+                    </div>
+                `;
+                riskContainer.appendChild(itemDiv);
+            });
+
+            // 渲染真实车主经验
+            const expContainer = document.getElementById("experience-container");
+            expContainer.innerHTML = "";
+            carOwnerData.ownerExperiences.forEach(exp => {
+                const expDiv = document.createElement("div");
+                expDiv.className = "exp-item";
+                expDiv.innerHTML = `
+                    <div class="exp-tag"># ${exp.type}</div>
+                    <div class="exp-content">${exp.text}</div>
+                `;
+                expContainer.appendChild(expDiv);
+            });
+
+            // 渲染智能省钱建议
+            const tipsContainer = document.getElementById("tips-container");
+            tipsContainer.innerHTML = "";
+            carOwnerData.savingsTips.forEach(tip => {
+                const tipDiv = document.createElement("div");
+                tipDiv.className = "tip-card";
+                tipDiv.innerHTML = `
+                    <div class="tip-left">
+                        <span class="tip-title">${tip.title}</span>
+                    </div>
+                    <div class="tip-save">预计省 ${tip.save}</div>
+                `;
+                tipsContainer.appendChild(tipDiv);
+            });
+
+            // 底部抽屉文案
+            document.getElementById("drawer-sub-wording").innerText = `每天与我聊天五分钟，今年预计为您节省 ¥2,400 元`;
+        }
+
+        // 全局视图路由切换
+        function switchView(viewId) {
+            document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+            document.getElementById(viewId).classList.add("active");
+        }
+
+        // 显示局部 Toast 提示
+        function showToast(message) {
+            const toast = document.getElementById("global-toast");
+            toast.innerText = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 2500);
+        }
+
+        // 核心交互与动画逻辑控制
+        function setupEventListeners() {
+            // 点击 立即查看 进入 Loading 流程
+            document.getElementById("btn-start").addEventListener("click", () => {
+                switchView("view-loading");
+                startLoadingProcess();
+            });
+
+            // 报告页返回按钮点击
+            document.getElementById("btn-back").addEventListener("click", () => {
+                switchView("view-welcome");
+            });
+
+            // 控制 Loading 页面动效与数字递增
+            function startLoadingProcess() {
+                const wordingElement = document.getElementById("loading-wording");
+                let currentStep = 0;
+                let currentMoney = 0;
+                
+                // 定时器1: 两句核心文案在 1.5 秒时平滑循环轮播
+                const wordingInterval = setInterval(() => {
+                    currentStep++;
+                    if (currentStep === 1) {
+                        wordingElement.style.opacity = "0";
+                        setTimeout(() => {
+                            wordingElement.innerHTML = `每天和我聊天五分钟，今年预计为您节省 <span class="dynamic-num" id="loading-num">0</span> 元`;
+                            wordingElement.style.opacity = "1";
+                            // 嵌套执行金钱平滑数字跳动递增逻辑
+                            animateMoney(0, 2400, 1200);
+                        }, 300);
+                    }
+                }, 1500);
+
+                function animateMoney(start, end, duration) {
+                    const obj = document.getElementById("loading-num");
+                    if(!obj) return;
+                    let startTime = null;
+                    function step(timestamp) {
+                        if (!startTime) startTime = timestamp;
+                        const progress = Math.min((timestamp - startTime) / duration, 1);
+                        obj.innerText = Math.floor(progress * (end - start) + start);
+                        if (progress < 1) {
+                            window.requestAnimationFrame(step);
+                        }
+                    }
+                    window.requestAnimationFrame(step);
+                }
+
+                // 定时器2: 整体 Loading 停留 3.2 秒后平滑切换至真实报告页
+                setTimeout(() => {
+                    clearInterval(wordingInterval);
+                    switchView("view-report");
+                    // 自动重置滚动条至最上方
+                    document.getElementById("report-scroller-content").scrollTop = 0;
+                }, 3200);
+            }
+
+            // 板块 6：底部吸底上滑引导及手势/点击拖拽高保真交互
+            const drawer = document.getElementById("bottom-drawer");
+            
+            // 行为 A: 直接点击也可以触发行为
+            drawer.addEventListener("click", () => {
+                triggerNextDialogue();
+            });
+
+            // 行为 B: 原生 Touch 拖拽交互监听（支持向上拉动进入对话）
+            let startY = 0;
+            let currentDeltaY = 0;
+            const threshold = -50; // 向上滑动超过 50 像素触发
+
+            drawer.addEventListener("touchstart", (e) => {
+                startY = e.touches[0].clientY;
+                drawer.style.transition = "none"; // 拖拽时关闭过渡
+            }, { passive: true });
+
+            drawer.addEventListener("touchmove", (e) => {
+                const currentY = e.touches[0].clientY;
+                currentDeltaY = currentY - startY;
+                
+                // 限制只能向上拉，不能向下拉得太夸张
+                if (currentDeltaY < 0) {
+                    // 增加一点点物理阻尼感
+                    const dampedY = Math.max(currentDeltaY, -120);
+                    drawer.style.transform = `translateY(${dampedY}px)`;
+                }
+            }, { passive: true });
+
+            drawer.addEventListener("touchend", () => {
+                drawer.style.transition = "transform 0.2s ease-out";
+                if (currentDeltaY < threshold) {
+                    // 超过阈值，成功触发下一步
+                    drawer.style.transform = "translateY(0px)";
+                    triggerNextDialogue();
+                } else {
+                    // 未超过阈值，回弹还原
+                    drawer.style.transform = "translateY(0px)";
+                }
+                currentDeltaY = 0; // 重置计数
+            });
+
+            function triggerNextDialogue() {
+                showToast("已进入下一步对话（Demo演示）");
+            }
+        }
+
+        // 机身框颜色切换
+        function setupFramePicker() {
+            const phone = document.querySelector(".phone-container");
+            const options = document.querySelectorAll(".frame-option");
+            if (!phone || options.length === 0) return;
+
+            const frameStyles = {
+                silver: "0 25px 50px -12px rgba(0,0,0,.25), 0 0 0 12px #c7ccd3, 0 0 0 14px #eef1f4, 0 0 0 16px #f8fafc, inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(150,158,168,.25)",
+                champagne: "0 25px 50px -12px rgba(0,0,0,.23), 0 0 0 12px #d7c7a1, 0 0 0 14px #ede2c9, 0 0 0 16px #f6efdf, inset 0 1px 0 rgba(255,255,255,.68), inset 0 -1px 0 rgba(163,142,98,.24)",
+                graphite: "0 25px 50px -12px rgba(0,0,0,.3), 0 0 0 12px #5e636a, 0 0 0 14px #777d86, 0 0 0 16px #a2a9b3, inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 0 rgba(25,29,34,.45)"
+            };
+
+            options.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const styleKey = btn.dataset.frame;
+                    phone.style.boxShadow = frameStyles[styleKey] || frameStyles.silver;
+                    options.forEach((item) => item.classList.remove("active"));
+                    btn.classList.add("active");
+                });
+            });
+        }
+    </script>
+</body>
+</html>
